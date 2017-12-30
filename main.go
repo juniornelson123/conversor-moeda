@@ -1,12 +1,13 @@
 package main
 
 import (
-	"./converter"
 	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
+
+	"github.com/juniornelson123/conversor-moeda/converter"
 )
 
 func main() {
