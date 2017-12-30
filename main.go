@@ -1,9 +1,9 @@
 package main
 
 import (
+	"./converter"
 	"bufio"
 	"fmt"
-	"github.com/juniornelson123/conversor-moeda/converter"
 	"os"
 	"os/exec"
 	"strconv"
