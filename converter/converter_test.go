@@ -112,4 +112,8 @@ func TestInsertCoin(t *testing.T) {
 
 	}
 
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Erro encontrado: %s", err)
+	}
+
 }
