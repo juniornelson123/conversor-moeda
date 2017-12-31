@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,11 +15,12 @@ const Real = "BRL"
 
 //Coin is struct than contain informations about value e kind
 type Coin struct {
-	Kind  string
-	Value float64
+	Kind         string
+	Value        float64
+	ValueConvert float64
 }
 
-func (c Coin) ConvertCoin(kindFinal string) (float64, error) {
+func (c Coin) ConvertCoin(kindFinal string, db *sql.DB) (float64, error) {
 	resp, err := http.Get("https://api.fixer.io/latest?base=" + libKind(c.Kind))
 
 	if err != nil {
@@ -41,12 +43,38 @@ func (c Coin) ConvertCoin(kindFinal string) (float64, error) {
 				return 0.0, fmt.Errorf("Dados invalidos: %s\n", errJson)
 
 			} else {
+				c.ValueConvert = convertCoinFinal(c.Value, r[libKind(kindFinal)].(float64))
 
+				c.insertCoin(db)
 				return convertCoinFinal(c.Value, r[libKind(kindFinal)].(float64)), nil
 
 			}
 		}
 	}
+}
+
+func (c Coin) insertCoin(db *sql.DB) (string, error) {
+	tx, err := db.Begin()
+
+	if err != nil {
+		return "Erro ao salvar conversão\n", fmt.Errorf("Erro ao salvar convsão %s\n", err)
+	}
+
+	stmt, err := tx.Prepare("INSERT INTO coins( kind,value,value_convert) values (?,?,?)")
+	if err != nil {
+		return "Erro ao salvar conversão\n", fmt.Errorf("Erro ao salvar convers %s\n", err)
+	}
+
+	_, err = stmt.Exec(c.Kind, c.Value, c.ValueConvert)
+
+	if err != nil {
+		return "Erro ao salvar conversão\n", fmt.Errorf("Erro ao salvar converss %s\n", err)
+	}
+
+	tx.Commit()
+
+	return "Salvo com sucesso", nil
+
 }
 
 func convertCoinFinal(valueCurrent, valueFinal float64) float64 {

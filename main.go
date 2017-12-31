@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strconv"
 
+	"github.com/juniornelson123/conversor-moeda/config/database"
 	"github.com/juniornelson123/conversor-moeda/converter"
 )
 
@@ -83,15 +84,15 @@ func convertCoin() {
 
 		coin = scanner2.Text()
 
-		c := converter.Coin{option, value}
+		c := converter.Coin{option, value, 0.0}
 
 		if option == "" || coin == "" || value == 0 {
 
 			fmt.Println("### Preencha todos os campos ##\n")
 			convertCoin()
 		} else {
-
-			convertValue, err := c.ConvertCoin(coin)
+			db, _ := database.OpenDB("root", "root", "conversormoeda")
+			convertValue, err := c.ConvertCoin(coin, db)
 
 			if err != nil {
 				fmt.Println("Erro ao tentar converter", err)

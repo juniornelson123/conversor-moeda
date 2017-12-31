@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
 const errorConvertCoin = "Não retornou um float64"
@@ -57,6 +59,12 @@ func TestToJson(t *testing.T) {
 
 func TestConvertCoin(t *testing.T) {
 
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
 	testes := []struct {
 		kind   string
 		coin   float64
@@ -66,13 +74,42 @@ func TestConvertCoin(t *testing.T) {
 	}
 	for _, test := range testes {
 
-		c := Coin{test.kind, test.coin}
-		value, _ := c.ConvertCoin("dolar")
+		c := Coin{test.kind, test.coin, 0.0}
+		value, _ := c.ConvertCoin("dolar", db)
 		myType := reflect.TypeOf(value)
 
 		if myType.Kind() != test.expect {
 			t.Errorf(errorConvertCoin)
 		}
+	}
+
+}
+
+func TestInsertCoin(t *testing.T) {
+	c := Coin{"euro", 12.4, 12.33}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectPrepare("INSERT INTO coins")
+	mock.ExpectExec("INSERT INTO coins").WithArgs("euro", 12.4, 12.33).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	resp, err := c.insertCoin(db)
+
+	if err != nil {
+		if err.Error() != "Erro ao salvar conversão\n" {
+			t.Errorf("Era esperada a mensagem Erro ao salvar conversão, ao inves disso foi recebido %s \n", err.Error())
+		}
+	} else {
+		if resp != "Salvo com sucesso" {
+			t.Errorf("Era esperada a mensagem Salvo com sucesso, ao inves disso foi recebido %s \n", resp)
+		}
+
 	}
 
 }
